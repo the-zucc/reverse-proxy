@@ -27,7 +27,18 @@ func main() {
 	certFile := flag.String("cert", "cert.pem", "Path to the SSL certificate file")
 	keyFile := flag.String("key", "key.pem", "Path to the SSL certificate key file")
 	configPath := flag.String("config", "config.json", "Path to the configuration file")
+	port := flag.String("port", "", "Port to run the server on")
+
 	flag.Parse() // Parse the flags
+
+	// Determine the default port based on the HTTPS flag
+	if *port == "" {
+		if *enableHTTPS {
+			*port = "443"
+		} else {
+			*port = "80"
+		}
+	}
 
 	// Load the proxy configuration from a JSON file
 	config, err := loadConfig(*configPath)
@@ -38,13 +49,15 @@ func main() {
 	// Set up the reverse proxy based on the loaded configuration
 	setupProxies(config)
 
+	// Start the server
+	addr := ":" + *port
 	// Start the server in HTTPS mode if enabled, otherwise start in HTTP mode
 	if *enableHTTPS {
 		log.Println("Starting HTTPS server")
-		log.Fatal(http.ListenAndServeTLS(":443", *certFile, *keyFile, nil))
+		log.Fatal(http.ListenAndServeTLS(addr, *certFile, *keyFile, nil))
 	} else {
 		log.Println("Starting HTTP server")
-		log.Fatal(http.ListenAndServe(":80", nil))
+		log.Fatal(http.ListenAndServe(addr, nil))
 	}
 }
 
