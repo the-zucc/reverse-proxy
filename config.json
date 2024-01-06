@@ -1,0 +1,12 @@
+{
+  "routes": [
+    {
+      "host": "example.com",
+      "target": "http://localhost:8080"
+    },
+    {
+      "host": "another.example.com",
+      "target": "http://localhost:9090"
+    }
+  ]
+}
