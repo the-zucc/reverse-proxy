@@ -48,27 +48,28 @@ func main() {
 	}
 }
 
-// setupProxies configures the reverse proxy handlers based on the given configuration.
+// setupProxies configures the reverse proxy handler based on the given configuration.
 func setupProxies(config *Config) {
+	proxies := make(map[string]*httputil.ReverseProxy)
+
 	for _, route := range config.Routes {
-		// Parse the target URL from the configuration
 		targetURL, err := url.Parse(route.Target)
 		if err != nil {
 			log.Fatalf("Error parsing target URL for host %s: %v", route.Host, err)
 		}
 
-		// Create a new reverse proxy for the target URL
 		proxy := httputil.NewSingleHostReverseProxy(targetURL)
-
-		// Set up a handler function for each route
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			// Check if the request host matches the configured route host
-			if r.Host == route.Host {
-				// Use the proxy to handle the request
-				proxy.ServeHTTP(w, r)
-			}
-		})
+		proxies[route.Host] = proxy
 	}
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		proxy, ok := proxies[r.Host]
+		if !ok {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+		proxy.ServeHTTP(w, r)
+	})
 }
 
 // loadConfig reads and parses the configuration file.
